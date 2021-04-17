@@ -11,6 +11,8 @@ services:
     networks:
       - muzic-network
 
+volumes:
+  mongodb_api:
 #   nginx:
 #     image: nginx:stable-alpine
 #     container_name: muzic-nginx
