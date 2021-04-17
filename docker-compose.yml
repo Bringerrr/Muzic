@@ -8,8 +8,8 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_api:/data/db
-    networks:
-      - muzic-network
+    # networks:
+    #   - muzic-network
 
 volumes:
   mongodb_api:
