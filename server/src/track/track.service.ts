@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Query } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, ObjectId } from "mongoose";
+import { FileService, FileType } from "src/file/file.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { CreateTrackDto } from "./dto/create-track.dto";
 import { Comment, CommentDocument } from "./schemas/comment.schema";
@@ -11,28 +12,43 @@ export class TrackService {
 
     constructor(
         @InjectModel(Track.name) private trackModel: Model<TrackDocument>,
-        @InjectModel(Comment.name) private commentModel: Model<CommentDocument>
+        @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
+        private fileService: FileService
     ) {}
 
-    async create(dto: CreateTrackDto): Promise<Track> {
-        const track = await this.trackModel.create({...dto, listened: 0})
+
+
+    async create(dto: CreateTrackDto, picture, audio): Promise<Track> {
+        const audioFile = this.fileService.createFile(FileType.AUDIO, audio)
+        const picturePath = this.fileService.createFile(FileType.IMAGE, picture)
+        const track = await this.trackModel.create({...dto, listened: 0 , audio: audioFile, picture: picturePath })
         return track
 
     }
 
-    async getAll(): Promise<Track[]>{
-        const tracks = await this.trackModel.find({})
+    async getAll(count=10, offset=0): Promise<Track[]>{
+        const tracks = await this.trackModel.find().skip(Number(offset)).limit(Number(count))
         return tracks
     }
 
     async getOne(id: ObjectId): Promise<Track>{
-        const tracks = await (await this.trackModel.findById(id))?.populate('comments')
+        const tracks = await this.trackModel.findById(id).populate('comments')
         return tracks
     }
 
     async delete(id: ObjectId): Promise<Track> {
         const deletedTrack = await this.trackModel.findByIdAndDelete(id)
         return deletedTrack
+    }
+
+    async search(query: string): Promise<Track[]> {
+        console.log('search ' , query)
+        const tracks = await this.trackModel.find({
+            name:{
+                $regex: new RegExp(query)
+            }
+        })
+        return tracks
     }
 
     async addComment(dto: CreateCommentDto): Promise<Comment> {
